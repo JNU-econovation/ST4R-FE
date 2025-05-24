@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { logoutmutation } from '../api/auth';
-import SearchBar from '../components/common/SearchBar'; // 테스트하기 위해서 import
+import { useNavigate } from 'react-router-dom';
+import { useLogoutMutation } from '../api/auth';
+import SearchBar from '../components/common/SearchBar';
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const logout = logoutmutation();
+  const logout = useLogoutMutation();
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -20,6 +19,10 @@ export default function HomePage() {
     }
   }, [navigate]);
 
+  const handleLogout = () => {
+    logout.mutate();
+  };
+
   return (
     <>
       {/* 검색바 컴포넌트 추가 */}
@@ -27,17 +30,15 @@ export default function HomePage() {
         <SearchBar />
       </div>
 
-      <span className="text-[#FFFFFF]">홈화면</span>
+      <span className="text-white">홈화면</span>
 
       {/* 테스트 로그아웃 버튼 */}
       <div
-        onClick={() => {
-          logout.mutate();
-        }}
-        className="absolute left-[12px] right-[12px] bottom-[80px] h-[60px] bg-[#FFBB02] rounded-[10px]"
+        onClick={handleLogout}
+        className="absolute left-3 right-3 bottom-20 h-15 bg-star-yellow rounded-lg cursor-pointer"
       >
-        <div className="absolute left-[20px] top-[18px] text-base font-extrabold font-['Pretendard']">
-          <span className="text-[#000000]">로그아웃</span>
+        <div className="absolute left-5 top-4 text-base font-extrabold">
+          <span className="text-black">로그아웃</span>
         </div>
       </div>
     </>

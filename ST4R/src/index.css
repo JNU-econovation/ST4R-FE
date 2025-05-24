@@ -1,5 +1,6 @@
-/* index.css */
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 html,
 body,
@@ -11,11 +12,11 @@ body,
 }
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Pretendard', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light dark;
-  color: rgba(33, 37, 41, 0.87);
+  color: rgba(255, 255, 255, 0.87);
   background-color: #000000;
 
   font-synthesis: none;
@@ -24,51 +25,67 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Custom button styles */
+.btn-primary {
+  background-color: #ffbb02;
+  color: #000000;
+  font-weight: bold;
+  padding: 12px 24px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:active {
+  transform: scale(0.95);
+}
+
+.btn-secondary {
+  background-color: #374151;
+  color: #ffffff;
   font-weight: 500;
-  color: #3b82f6;
-  text-decoration: none;
-}
-a:hover {
-  color: #2563eb;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
 
-h1 {
-  font-size: 2.25rem;
-  line-height: 1.1;
-  font-weight: 700;
+.btn-secondary:hover {
+  background-color: #4b5563;
 }
 
-button {
-  border-radius: 0.5rem;
-  border: none;
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  font-weight: 500;
-  background-color: #3b82f6;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-button:hover {
-  background-color: #2563eb;
-}
-button:focus {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+/* Custom input styles */
+.input-primary {
+  background-color: #121212;
+  color: #ffffff;
+  border: 1px solid #4b5563;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.2s;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #e0e0e0;
-    background-color: #121212;
-  }
-
-  button {
-    background-color: #1e40af;
-  }
-
-  button:hover {
-    background-color: #1e3a8a;
-  }
+.input-primary:focus {
+  border-color: #ffbb02;
+  outline: none;
+  box-shadow: 0 0 0 1px #ffbb02;
 }

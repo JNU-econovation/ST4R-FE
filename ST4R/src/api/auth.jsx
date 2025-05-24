@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 
-export const logoutmutation = () => {
+export const useLogoutMutation = () => {
   return useMutation({
     mutationFn: async () => {
       const res = await axios.post(
