@@ -5,6 +5,7 @@ import axios from 'axios';
 import ModalPortal from '../components/common/ModalPortal';
 import LogoutModal from '../components/modals/LogoutModal';
 import DeleteMemberModal from '../components/modals/DeleteMemberModal';
+import GuestProfilePage from './profile/GuestProfilePage';
 
 // 프로필 아이콘 컴포넌트
 const ProfileIcon = ({ className = 'w-[18px] h-[18px]' }) => (
@@ -55,47 +56,12 @@ const CONSTELLATION_NAMES = {
   PISCES: '물고기자리',
 };
 
-// 사용자 정보 조회 API
-const useUserInfo = () => {
-  return useQuery({
-    queryKey: ['userInfo'],
-    queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('로그인이 필요합니다.');
-      }
-
-      const response = await axios.get(
-        'https://eridanus.econo.mooo.com/my',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      console.log('사용자 정보 조회 성공:', response.data);
-      localStorage.setItem('user', JSON.stringify(response.data));
-      return response.data;
-    },
-    enabled: !!localStorage.getItem('token'),
-    staleTime: 1000 * 60 * 10,
-    retry: (failureCount, error) => {
-      if (error?.response?.status === 401) return false;
-      return failureCount < 2;
-    },
-    onError: (error) => {
-      console.error('사용자 정보 조회 실패:', error);
-      if (error?.response?.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    },
-  });
-};
-
 export default function ProfilePage() {
   const navigate = useNavigate();
+
+  // 로그인 상태 확인 - 동기적으로 처리
+  const token = localStorage.getItem('token');
+  const isAuthenticated = !!token;
 
   // 모달 상태 관리
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -104,8 +70,53 @@ export default function ProfilePage() {
   // 로컬 상태로 프로필 이미지 관리
   const [localProfileImage, setLocalProfileImage] = useState('');
 
-  // API를 통해 사용자 정보 조회
-  const { data: userInfo, isLoading, error, refetch } = useUserInfo();
+  // 사용자 정보 조회 API - 로그인한 경우에만
+  const {
+    data: userInfo,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['userInfo'],
+    queryFn: async () => {
+      // 토큰 재확인
+      const currentToken = localStorage.getItem('token');
+      if (!currentToken) {
+        throw new Error('No token available');
+      }
+
+      // axios 인터셉터를 우회하기 위해 새로운 인스턴스 생성
+      const apiClient = axios.create({
+        baseURL: 'https://eridanus.econo.mooo.com',
+        timeout: 10000,
+      });
+
+      const response = await apiClient.get('/my', {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+        },
+      });
+
+      console.log('사용자 정보 조회 성공:', response.data);
+      localStorage.setItem('user', JSON.stringify(response.data));
+      return response.data;
+    },
+    enabled: isAuthenticated, // 로그인한 경우에만 실행
+    staleTime: 1000 * 60 * 10,
+    retry: false, // 재시도하지 않음
+    onError: (error) => {
+      console.error('사용자 정보 조회 실패:', error);
+      if (error?.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    },
+  });
+
+  // 로그인하지 않은 경우 GuestProfilePage 표시
+  if (!isAuthenticated) {
+    return <GuestProfilePage />;
+  }
 
   // localStorage에서 프로필 이미지 확인
   useEffect(() => {
@@ -124,7 +135,6 @@ export default function ProfilePage() {
 
   // 프로필 이미지 가져오기 함수
   const getProfileImageUrl = () => {
-    // API 응답에서 확인하고, 없으면 localStorage에서 확인
     return userInfo?.profileImageUrl || localProfileImage;
   };
 
@@ -157,44 +167,14 @@ export default function ProfilePage() {
     );
   }
 
-  // 에러 상태 (로그인 필요)
-  if (
-    error?.response?.status === 401 ||
-    error?.message === '로그인이 필요합니다.'
-  ) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
-        <div className="text-center">
-          <svg
-            className="w-16 h-16 mx-auto mb-4 text-yellow-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1}
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-            />
-          </svg>
-          <h2 className="text-xl font-bold text-white mb-2">
-            로그인이 필요합니다
-          </h2>
-          <p className="text-gray-400 mb-4">프로필을 보려면 로그인해주세요.</p>
-          <button
-            onClick={() => navigate('/login')}
-            className="bg-yellow-500 text-black px-6 py-2 rounded-lg font-medium hover:bg-yellow-400 transition-colors"
-          >
-            로그인
-          </button>
-        </div>
-      </div>
-    );
+  // 에러 상태 (401 에러 등)
+  if (error && error?.response?.status === 401) {
+    // 토큰이 만료된 경우 GuestProfilePage 표시
+    return <GuestProfilePage />;
   }
 
   // 기타 에러 상태
-  if (error && error?.response?.status !== 401) {
+  if (error) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
         <div className="text-center">
@@ -225,10 +205,10 @@ export default function ProfilePage() {
               다시 시도
             </button>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/home')}
               className="bg-gray-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors"
             >
-              로그인
+              홈으로
             </button>
           </div>
         </div>
@@ -277,7 +257,6 @@ export default function ProfilePage() {
                     alt="프로필 이미지"
                     className="w-12 h-12 rounded-full object-cover"
                     onError={() => {
-                      // 에러 시 로컬 이미지 제거
                       setLocalProfileImage('');
                     }}
                   />
@@ -439,4 +418,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

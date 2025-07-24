@@ -24,7 +24,7 @@ export default function HomePage() {
   const [currentPeriod, setCurrentPeriod] = useState('daily');
   const [currentCategory, setCurrentCategory] = useState('all');
 
-  // 검색 에러 상태 추가
+  // 검색 에러 상태
   const [searchError, setSearchError] = useState('');
 
   // 지도 검색 파라미터 추출
@@ -57,7 +57,7 @@ export default function HomePage() {
     };
   }
 
-  // 백엔드 검색 API 사용 - 로그인 처리 중에는 비활성화
+  // 백엔드 검색 API 사용
   const {
     data: postsData,
     isLoading: isPostsLoading,
@@ -71,62 +71,48 @@ export default function HomePage() {
   // 표시할 게시글 목록
   const displayPosts = postsData?.boardPeeks?.content || [];
 
-  // 토큰 유효성 검사 함수 - 단순화
+  // 토큰 유효성 검사 함수
   const validateToken = (token) => {
     if (!token) return false;
 
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.error('잘못된 JWT 토큰 형식');
         return false;
       }
 
-      // 기본적인 payload 파싱 확인만 하고, 만료시간은 서버에서 검증
       const payload = JSON.parse(atob(parts[1]));
-      console.log('토큰 검증 완료 - 서버에서 만료시간 확인 예정');
       return true;
     } catch (error) {
-      console.error('토큰 파싱 에러:', error);
       return false;
     }
   };
 
-  // 인증 상태 확인 함수 - 단순화
+  // 인증 상태 확인 함수
   const checkAuthStatus = () => {
     const token = localStorage.getItem('token');
-    console.log('저장된 토큰:', token ? '존재함' : '없음');
 
     if (!token) {
       setAuthChecked(true);
       return;
     }
 
-    // 토큰 형식만 확인하고, 만료시간은 실제 API 호출시 서버에서 검증
     if (!validateToken(token)) {
-      console.log('유효하지 않은 토큰 형식, 정리 중...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setAuthChecked(true);
       return;
     }
 
-    console.log('토큰 형식 유효 - 서버 검증 대기 중');
     setAuthChecked(true);
   };
 
-  // 카카오 로그인 토큰 처리 함수 - axios 인터셉터 우회 버전
+  // 카카오 로그인 토큰 처리 함수
   const handleKakaoLogin = async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('accessToken');
 
-    console.log('=== 카카오 로그인 처리 시작 ===');
-    console.log('URL:', window.location.href);
-    console.log('현재 searchParams:', Object.fromEntries(urlParams));
-    console.log('추출된 토큰:', token ? '존재함' : '없음');
-
     if (!token) {
-      console.log('URL에 토큰 없음');
       return;
     }
 
@@ -140,39 +126,28 @@ export default function HomePage() {
 
       // 2. 토큰 저장
       localStorage.setItem('token', token);
-      console.log('새 토큰 저장 완료');
 
       // 3. URL에서 토큰 파라미터 제거
       const newSearchParams = new URLSearchParams(window.location.search);
       newSearchParams.delete('accessToken');
 
-      // 현재 경로 확인
       const currentPath = window.location.pathname;
-      console.log('현재 경로:', currentPath);
-
       let newUrl;
       if (currentPath === '/register') {
-        // /register 경로인 경우
         newUrl = newSearchParams.toString()
           ? `/register?${newSearchParams.toString()}`
           : '/register';
       } else {
-        // /home 경로인 경우
         newUrl = newSearchParams.toString()
           ? `/home?${newSearchParams.toString()}`
           : '/home';
       }
 
-      console.log('새로운 URL:', newUrl);
       window.history.replaceState({}, '', newUrl);
-
-      // searchParams 업데이트
       const updatedParams = new URLSearchParams(newUrl.split('?')[1] || '');
       setSearchParams(updatedParams);
 
-      // 4. axios 인터셉터를 우회하여 직접 요청 생성
-      console.log('사용자 정보 조회 시작 (인터셉터 우회)...');
-
+      // 4. 사용자 정보 조회
       const userResponse = await axios
         .create({
           baseURL: 'https://eridanus.econo.mooo.com',
@@ -184,8 +159,6 @@ export default function HomePage() {
         })
         .get('/my');
 
-      console.log('사용자 정보 조회 성공:', userResponse.data);
-
       // 5. 사용자 정보 저장
       localStorage.setItem('user', JSON.stringify(userResponse.data));
 
@@ -194,7 +167,6 @@ export default function HomePage() {
         !userResponse.data.nickname ||
         userResponse.data.nickname.trim() === ''
       ) {
-        console.log('닉네임 없음, 회원가입 완료 페이지로 이동');
         navigate('/register', { replace: true });
         return;
       }
@@ -202,35 +174,43 @@ export default function HomePage() {
       // 7. 성공적으로 완료된 경우 리다이렉트
       const returnUrl = sessionStorage.getItem('returnUrl');
       if (returnUrl && returnUrl !== '/login' && returnUrl !== '/login-alert') {
-        console.log('저장된 returnUrl로 이동:', returnUrl);
         sessionStorage.removeItem('returnUrl');
         navigate(returnUrl, { replace: true });
       } else {
-        console.log('홈으로 이동 - 페이지 새로고침');
-        // 현재 홈 페이지에 있으므로 페이지 새로고침으로 상태 업데이트
         window.location.reload();
       }
     } catch (error) {
-      console.error('=== 카카오 로그인 처리 실패 ===');
-      console.error('에러 상세:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        name: error.name,
-      });
+      // 에러 처리
+      if (error.response?.status === 401) {
+        const errorCode = error.response?.data?.errorCode;
+        if (errorCode === 'SECURITY_401_001') {
+          alert('인증이 필요합니다. 다시 로그인해주세요.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login', { replace: true });
+        }
+      } else if (error.response?.status === 403) {
+        const errorCode = error.response?.data?.errorCode;
 
-      // 토큰은 유지하고 회원가입 페이지로 이동
-      if (error.response?.status === 401 || error.response?.status === 404) {
-        console.log('회원가입 필요 - 토큰은 유지하고 회원가입 페이지로 이동');
-        // 토큰은 이미 저장되어 있으므로 그대로 두고 회원가입 페이지로 이동
+        if (errorCode === 'SECURITY_403_001') {
+          navigate('/register', { replace: true });
+        } else if (errorCode === 'SECURITY_403_002') {
+          alert('이미 탈퇴한 회원입니다. 새로운 계정으로 가입해주세요.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login', { replace: true });
+        } else {
+          alert('접근 권한이 없습니다.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/home', { replace: true });
+        }
+      } else if (error.response?.status === 404) {
         navigate('/register', { replace: true });
       } else if (error.response?.status === 500) {
-        console.log('서버 내부 오류');
         alert(
           '서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.'
         );
-        // 토큰 제거
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/home', { replace: true });
@@ -238,23 +218,17 @@ export default function HomePage() {
         error.code === 'ECONNABORTED' ||
         error.message.includes('timeout')
       ) {
-        console.log('요청 타임아웃');
         alert('서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.');
-        // 토큰 제거
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/home', { replace: true });
       } else if (error.code === 'ERR_NETWORK') {
-        console.log('네트워크 오류');
         alert('네트워크 연결을 확인해주세요.');
-        // 토큰 제거
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/home', { replace: true });
       } else {
-        console.log('알 수 없는 오류');
         alert('로그인 처리 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
-        // 토큰 제거
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         navigate('/home', { replace: true });
@@ -266,12 +240,9 @@ export default function HomePage() {
 
   // 초기 인증 상태 확인
   useEffect(() => {
-    console.log('=== 초기 인증 상태 확인 ===');
     checkAuthStatus();
 
-    // storage 이벤트 리스너
     const handleStorageChange = () => {
-      console.log('storage 변경 감지');
       checkAuthStatus();
     };
 
@@ -279,7 +250,7 @@ export default function HomePage() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // 카카오 로그인 처리 - 의존성 배열 수정
+  // 카카오 로그인 처리
   useEffect(() => {
     if (authChecked && !isProcessingLogin) {
       handleKakaoLogin();
@@ -317,7 +288,6 @@ export default function HomePage() {
   useEffect(() => {
     if (postsError) {
       if (postsError.isAuthError && postsError.shouldRetryWithoutAuth) {
-        console.log('인증 에러로 인한 재시도');
         setTimeout(() => {
           refetchPosts();
         }, 1000);
@@ -362,7 +332,6 @@ export default function HomePage() {
     );
   }
 
-  // 나머지 렌더링 로직은 동일...
   return (
     <div className="min-h-screen bg-black">
       {/* 헤더 컴포넌트 */}

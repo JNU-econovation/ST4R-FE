@@ -140,6 +140,19 @@ export default function Header({
     alert('알림 기능은 준비 중입니다.');
   };
 
+  // 로고 클릭 핸들러
+  const handleLogoClick = () => {
+    const currentPath = window.location.pathname;
+
+    // 홈 페이지에 있는 경우 새로고침
+    if (currentPath === '/home' || currentPath === '/') {
+      window.location.reload();
+    } else {
+      // 다른 페이지에 있는 경우 홈으로 이동
+      navigate('/home');
+    }
+  };
+
   // 지도 검색 버튼 클릭 핸들러
   const handleMapSearchClick = () => {
     if (isMapSearchActive) {
@@ -215,7 +228,12 @@ export default function Header({
       <div>
         {/* 상단 타이틀과 알림 영역 */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-white">Starlight</h1>
+          <h1
+            className="text-2xl font-bold text-white cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleLogoClick}
+          >
+            Starlight
+          </h1>
           <div className="flex items-center space-x-2">
             {/* 알림 아이콘 */}
             <button

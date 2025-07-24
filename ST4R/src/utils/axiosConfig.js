@@ -118,10 +118,10 @@ axios.interceptors.response.use(
 
       // 프로필 페이지는 특별 처리
       if (currentPath === '/profile') {
-        // 프로필 페이지에서는 컴포넌트에서 처리하도록 에러 전달
+        // 프로필 페이지에서는 컴포넌트에서 처리하도록 에러만 전달
         const authError = new Error('Authentication required');
         authError.isAuthError = true;
-        authError.shouldRedirectToLogin = true;
+        authError.shouldRedirectToLogin = false; // false로 변경
         return Promise.reject(authError);
       }
 

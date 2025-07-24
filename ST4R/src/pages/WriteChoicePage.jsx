@@ -9,8 +9,23 @@ export default function WriteChoicePage() {
   const [selected, setSelected] = useState(null);
   const navigate = useNavigate();
 
+  // 로그인 확인 함수
+  const checkAuth = () => {
+    const token = localStorage.getItem('token');
+    return !!token;
+  };
+
   const handleSelect = (type, path) => {
     setSelected(type);
+
+    // 로그인 확인
+    if (!checkAuth()) {
+      // 로그인되지 않은 경우 로그인 알림 페이지로 이동
+      setTimeout(() => navigate('/login-alert'), 120);
+      return;
+    }
+
+    // 로그인된 경우 해당 페이지로 이동
     setTimeout(() => navigate(path), 120);
   };
 
@@ -126,4 +141,3 @@ export default function WriteChoicePage() {
     </div>
   );
 }
-

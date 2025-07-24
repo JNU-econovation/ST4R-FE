@@ -72,14 +72,25 @@ function MobileNavBar() {
   const flashYellowColor = '#FFE600';
   const grayColor = '#6B6B6B';
 
-  // 메뉴 클릭시 반짝 효과 + 이동
+  // 메뉴 클릭시 반짝 효과 + 이동 또는 새로고침
   const handleMenuClick = (e, to, key, available) => {
     if (!available) return;
     e.preventDefault();
+
+    // 현재 페이지인지 확인
+    const isCurrentPage = isActive(menu.find((item) => item.key === key)?.path);
+
     setHighlight(key);
     setTimeout(() => {
       setHighlight('');
-      navigate(to);
+
+      if (isCurrentPage) {
+        // 현재 페이지면 새로고침
+        window.location.reload();
+      } else {
+        // 다른 페이지면 이동
+        navigate(to);
+      }
     }, 180);
   };
 
@@ -137,4 +148,3 @@ function MobileNavBar() {
 }
 
 export default MobileNavBar;
-
