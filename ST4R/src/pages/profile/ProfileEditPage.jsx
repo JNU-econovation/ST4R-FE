@@ -61,9 +61,36 @@ const useUpdateProfileMutation = () => {
         throw new Error('로그인이 필요합니다.');
       }
 
+      // API 요청 형식에 맞게 데이터 변환
+      const requestData = {};
+
+      // 프로필 이미지 변경 여부 확인
+      if (data.profileImageUrl !== undefined) {
+        requestData.changeProfileImage = true;
+        requestData.profileImageUrlToChange = data.profileImageUrl;
+      } else {
+        requestData.changeProfileImage = false;
+      }
+
+      // 닉네임 변경 여부 확인
+      if (
+        data.nickname !== undefined &&
+        data.nickname !== data.originalNickname
+      ) {
+        requestData.changeNickname = true;
+        requestData.nicknameToChange = data.nickname;
+      } else {
+        requestData.changeNickname = false;
+      }
+
+      // 둘 다 false면 에러 처리
+      if (!requestData.changeProfileImage && !requestData.changeNickname) {
+        throw new Error('변경할 항목이 없습니다.');
+      }
+
       const response = await axios.patch(
-        'https://eridanus.econo.mooo.com/members',
-        data,
+        'https://eridanus.econo.mooo.com/my/profile',
+        requestData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
