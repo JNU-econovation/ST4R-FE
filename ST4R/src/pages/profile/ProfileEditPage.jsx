@@ -121,9 +121,13 @@ export default function ProfileEditPage() {
   // 폼 상태 관리
   const [formData, setFormData] = useState({
     nickname: '',
-    birthDate: '',
-    gender: 'UNKNOWN',
     profileImageUrl: '',
+  });
+
+  // 표시용 사용자 정보
+  const [displayInfo, setDisplayInfo] = useState({
+    birthDate: '',
+    gender: '',
   });
 
   // 이미지 업로드 상태
@@ -145,9 +149,11 @@ export default function ProfileEditPage() {
     if (userInfo) {
       setFormData({
         nickname: userInfo.nickname || '',
+        profileImageUrl: userInfo.profileImageUrl || '',
+      });
+      setDisplayInfo({
         birthDate: userInfo.birthDate || '',
         gender: userInfo.gender || 'UNKNOWN',
-        profileImageUrl: userInfo.profileImageUrl || '',
       });
       setOriginalNickname(userInfo.nickname || '');
       setProfileImagePreview(userInfo.profileImageUrl || '');
@@ -296,19 +302,6 @@ export default function ProfileEditPage() {
       newErrors.nickname = '이미 존재하는 닉네임입니다.';
     }
 
-    // 생년월일 검사
-    if (!formData.birthDate) {
-      newErrors.birthDate = '생년월일을 입력해주세요.';
-    } else {
-      const birthDate = new Date(formData.birthDate);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-
-      if (age < 14 || age > 100) {
-        newErrors.birthDate = '올바른 생년월일을 입력해주세요.';
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -341,9 +334,8 @@ export default function ProfileEditPage() {
 
       const submitData = {
         nickname: formData.nickname.trim(),
-        birthDate: formData.birthDate,
-        gender: formData.gender,
         profileImageUrl: imageUrl,
+        originalNickname: originalNickname,
       };
 
       await updateProfileMutation.mutateAsync(submitData);
@@ -351,6 +343,19 @@ export default function ProfileEditPage() {
     } catch (error) {
       console.error('프로필 수정 실패:', error);
       alert('프로필 수정에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  // 성별 표시 함수
+  const getGenderDisplay = (gender) => {
+    switch (gender) {
+      case 'MAN':
+        return '남성';
+      case 'WOMAN':
+        return '여성';
+      case 'UNKNOWN':
+      default:
+        return '선택안함';
     }
   };
 
@@ -488,19 +493,14 @@ export default function ProfileEditPage() {
             <label className="block text-sm font-medium text-white mb-2">
               생년월일
             </label>
-            <input
-              type="date"
-              value={formData.birthDate}
-              onChange={(e) => handleInputChange('birthDate', e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
-              className={`w-full h-12 px-3 bg-[#1D1D1D] rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 text-white ${
-                errors.birthDate ? 'border border-red-400' : ''
-              }`}
-              disabled={isLoading}
-            />
-            {errors.birthDate && (
-              <p className="text-red-400 text-sm mt-1">{errors.birthDate}</p>
-            )}
+            <div className="w-full h-12 px-3 bg-[#0A0A0A] rounded-lg flex items-center text-gray-400 cursor-not-allowed">
+              {displayInfo.birthDate
+                ? new Date(displayInfo.birthDate).toLocaleDateString('ko-KR')
+                : '정보 없음'}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              생년월일은 수정할 수 없습니다
+            </p>
           </div>
 
           {/* 성별 */}
@@ -508,27 +508,12 @@ export default function ProfileEditPage() {
             <label className="block text-sm font-medium text-white mb-2">
               성별
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 'MAN', label: '남성' },
-                { value: 'WOMAN', label: '여성' },
-                { value: 'UNKNOWN', label: '선택안함' },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleInputChange('gender', option.value)}
-                  disabled={isLoading}
-                  className={`h-12 rounded-lg border transition-colors ${
-                    formData.gender === option.value
-                      ? 'bg-yellow-500 border-yellow-500 text-black font-medium'
-                      : 'bg-[#1D1D1D] border-gray-600 text-white hover:border-gray-500'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {option.label}
-                </button>
-              ))}
+            <div className="w-full h-12 px-3 bg-[#0A0A0A] rounded-lg flex items-center text-gray-400 cursor-not-allowed">
+              {getGenderDisplay(displayInfo.gender)}
             </div>
+            <p className="text-xs text-gray-500 mt-1">
+              성별은 수정할 수 없습니다
+            </p>
           </div>
 
           {/* 제출 버튼 */}
